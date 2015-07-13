@@ -1,0 +1,11 @@
+#pragma once
+#include <iostream>
+#include <pcl/io/pcd_io.h>
+#include <pcl/point_types.h>
+#include <pcl/visualization/pcl_visualizer.h>
+typedef pcl::PointCloud<pcl::PointXYZRGB>::Ptr pcptr;
+typedef boost::shared_ptr<pcl::visualization::PCLVisualizer> visualizzatoreptr;
+typedef boost::shared_ptr<pcl::visualization::PCLVisualizer> visualizzatore;
+typedef pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGB> colorhandle;
+
+void visualizza(pcptr cloudptr );
