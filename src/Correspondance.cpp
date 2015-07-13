@@ -6,26 +6,30 @@
  */
 
 #include <Correspondance.h>
-#include <pcl-1.8/pcl/impl/point_types.hpp>
-#include <pcl-1.8/pcl/console/print.h>
-#include <pcl-1.7/pcl/console/print.h>
-#include <pcl-1.8/pcl/impl/point_types.hpp>
 
-float HistogramDistance(float* A, float* B);
-
+/* Costruttore*/
 Correspondance::Correspondance() {
     Modello = CloudT(new pcl::PointCloud<point>);
     Scena = CloudT(new pcl::PointCloud<point>);
 };
 
+/* Dichiarazioni delle funzioni ausiliarie*/
+float HistogramDistance(float* A, float* B);
+
+
+
 bool comparetriplets(triplet a, triplet b) {
     return (a.dist < b.dist);
 };
 
+
+/* Metodo "compute()"*/
 void Correspondance::compute() {
 
      
-
+/* Chiamo il sottomodulo di descrizione della scena e del modello*/
+/* vengono eseguite segmentazione, calcolo dei descrittori e 
+ * dei sistemi di riferimento locali*/
     std::cout << "\nCLCOLO DESCRIZIONE DEL MODELLO\n";
     DescrizioneModello.cloud=Modello;
     DescrizioneModello.compute();
@@ -37,18 +41,20 @@ void Correspondance::compute() {
 
 
 
-    std::cout << "\nCREO KDTREE PER IL MATCHING\n";
 
 
-
-
-    //  For each scene keypoint descriptor, find nearest neighbor into the model keypoints descriptor cloud and add it to the correspondences vector.
+    /* Per ogni patch nel modello trovo le k patch della scena più simili*/
     for (int i = 0; i < DescrizioneModello.descriptorCloud->size(); i++) {
 
 
-
+        /*Vettore di triplette*/
+        /*La tripletta è  semplicemente una struttura contenente gli indici 
+         * di due patch e la distanza dei loro descrittori*/
+        
+        
         std::vector<triplet> tripletvector;
 
+        /* Scorro tutte le patch della scena*/
         for (int j = 0; j < DescrizioneScena.descriptorCloud->size(); j++) {
 
             float * model_hist;
@@ -57,10 +63,11 @@ void Correspondance::compute() {
             scene_hist = &(DescrizioneScena.descriptorCloud->points[j].histogram[0]);
 
 
-            
+            /* Distanza euclidea tra gli istogrammi*/
 
             float distance = HistogramDistance(model_hist, scene_hist);
 
+            /* Riempio la struttura tripletta */
             triplet t;
             t.query = i;
             t.match = j;
@@ -70,12 +77,14 @@ void Correspondance::compute() {
 
 
         }
-
+        /* Ordino il vettore di triplette comparando le distanze*/
         std::sort(tripletvector.begin(), tripletvector.end(), comparetriplets);
-
+        
+        /* Stampo a video il vettore ordinato*/
         for (auto itr = tripletvector.begin(); itr != tripletvector.end(); itr++)
             pcl::console::print_value("\ntripletta dist:%f query:%i match:%i \n", itr->dist, itr->query, itr->match);
 
+        /* Riempio la std::map mapQuery2Match che associa indice di query --> vettore di k corrispondenzew*/
         std::vector<triplet> tmp;
 
         for (int i = 0; i < kmatch; i++)

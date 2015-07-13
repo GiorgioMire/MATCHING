@@ -10,7 +10,8 @@
 
 #include <iostream>
 #include <fstream>
-#include <pcl/point_types.h>
+#include <pcl-1.8/pcl/impl/point_types.hpp>
+#include <pcl-1.8/pcl/console/print.h>
 #include <pcl/point_types.h>
 #include <pcl/pcl_base.h>
 #include <pcl/common/common.h>
