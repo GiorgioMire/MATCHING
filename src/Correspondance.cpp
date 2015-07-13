@@ -6,6 +6,7 @@
  */
 
 #include <Correspondance.h>
+#include <pcl-1.8/pcl/impl/point_types.hpp>
 
 /* Costruttore*/
 Correspondance::Correspondance() {
@@ -16,26 +17,23 @@ Correspondance::Correspondance() {
 /* Dichiarazioni delle funzioni ausiliarie*/
 float HistogramDistance(float* A, float* B);
 
-
-
 bool comparetriplets(triplet a, triplet b) {
     return (a.dist < b.dist);
 };
 
-
 /* Metodo "compute()"*/
 void Correspondance::compute() {
 
-     
-/* Chiamo il sottomodulo di descrizione della scena e del modello*/
-/* vengono eseguite segmentazione, calcolo dei descrittori e 
- * dei sistemi di riferimento locali*/
+
+    /* Chiamo il sottomodulo di descrizione della scena e del modello*/
+    /* vengono eseguite segmentazione, calcolo dei descrittori e 
+     * dei sistemi di riferimento locali*/
     std::cout << "\nCLCOLO DESCRIZIONE DEL MODELLO\n";
-    DescrizioneModello.cloud=Modello;
+    DescrizioneModello.cloud = Modello;
     DescrizioneModello.compute();
     DescrizioneModello.GeneraCSV();
-    
-    DescrizioneScena.cloud=Scena;
+
+    DescrizioneScena.cloud = Scena;
     DescrizioneScena.compute();
     DescrizioneScena.GeneraCSV();
 
@@ -50,8 +48,8 @@ void Correspondance::compute() {
         /*Vettore di triplette*/
         /*La tripletta è  semplicemente una struttura contenente gli indici 
          * di due patch e la distanza dei loro descrittori*/
-        
-        
+
+
         std::vector<triplet> tripletvector;
 
         /* Scorro tutte le patch della scena*/
@@ -79,7 +77,7 @@ void Correspondance::compute() {
         }
         /* Ordino il vettore di triplette comparando le distanze*/
         std::sort(tripletvector.begin(), tripletvector.end(), comparetriplets);
-        
+
         /* Stampo a video il vettore ordinato*/
         for (auto itr = tripletvector.begin(); itr != tripletvector.end(); itr++)
             pcl::console::print_value("\ntripletta dist:%f query:%i match:%i \n", itr->dist, itr->query, itr->match);
@@ -98,23 +96,30 @@ void Correspondance::compute() {
 
 }
 
+/* Metodo che visualizza le corrispondenze*/
+
 void Correspondance::visualizza() {
-    
+
     cout << "\nVISUALIZZO CORRISPONDENZE\n";
 
+    /* Definisco il colore grigio scuro per visualizzare il modello e la scena*/
     pcl::visualization::PointCloudColorHandlerCustom<point> color1(Modello, 50, 50, 50);
     pcl::visualization::PointCloudColorHandlerCustom<point> color2(Scena, 50, 50, 50);
-    
+
     char uscire = 'n';
     while (uscire != 'y') {
-        
+        /* Si indica da riga di comando l'id della patch del modello di cui
+         visualizzare la corrispondenze*/
         pcl::console::print_highlight("\n Scegli la patch da matchare da 0 a %i\n", mapQuery2Match.size() - 1);
         int which;
         cin>> which;
-        
-        auto itr = mapQuery2Match.begin() ;
-        std::advance(itr,which);
 
+        /* Faccio puntare all'iteratore la patch scelta */
+
+        auto itr = mapQuery2Match.begin();
+        std::advance(itr, which);
+
+        /* Instanzio i due visualizzatori v per il modello e w per la scena*/
         pcl::visualization::PCLVisualizer v;
         pcl::visualization::PCLVisualizer w;
         v.setPosition(0, 0);
@@ -133,17 +138,27 @@ void Correspondance::visualizza() {
 
         for (int l = 0; l < tripletvect.size(); l++) {
 
+            /* q = id della patch di query*/
             int q = DescrizioneModello.mapIndices2IDs[tripletvect[l].query];
+
+            /* m = indice della patch match*/
             int m = DescrizioneScena.mapIndices2IDs[tripletvect[l].match];
+
+            /* distanza */
             float d = tripletvect[l].dist;
+
+
             pcl::console::print_info("\n correspondance %i -> % i ,dist=: %f  ", q, m, d);
 
+            /* Estraggo la point cloud delle patch*/
             CloudT query = DescrizioneModello.sc.supervoxel_clusters[ q]->voxels_;
             CloudT match = DescrizioneScena.sc.supervoxel_clusters[m]->voxels_;
 
-            int b = 255 * float(l) / float(tripletvect.size()); //std::rand()%255;
+            /* Colore rosso proporzionale a l=posizione nel vettore ordinato con la distanza*/
+
+            int b = 255 * float(l) / float(tripletvect.size()); 
             int g = 0; //std::rand()%255;
-            int r = 255 * (1 - l / float(tripletvect.size())); //std::rand()%255;
+            int r = 255 * (1 - l / float(tripletvect.size())); 
 
             pcl::visualization::PointCloudColorHandlerCustom<point> colorquery(query,
                     255, 0, 0);
@@ -152,7 +167,7 @@ void Correspondance::visualizza() {
             pcl::visualization::PointCloudColorHandlerCustom<point> colormatch(match,
                     r, g, b);
 
-
+/* Aggiungo le cloud con i suddetti colori*/
 
             v.addPointCloud(query, colorquery, "cloudmodello" + std::to_string(itr->first) + std::to_string(l));
             w.addPointCloud(match, colormatch, "cloudscena" + std::to_string(itr->first) + std::to_string(l));
@@ -161,6 +176,7 @@ void Correspondance::visualizza() {
 
         };
 
+        /* Effettuo il rendering della cloud*/
         while (!w.wasStopped() && !v.wasStopped()) {
             v.spinOnce();
             w.spinOnce();
@@ -176,14 +192,14 @@ void Correspondance::visualizza() {
         v.setSize(1, 1);
         w.setSize(1, 1);
 
-        cout<<"\nUscire?\n y \\ n";
+        cout << "\nUscire?\n y \\ n";
         cin>>uscire;
 
     }
 }
 
-
 float HistogramMax(float* A) {
+    /* Trova il massimo valore nell'istogramma di 33 float*/
     float max = A[0];
 
     for (int i = 1; i < 33; i++) {
@@ -197,6 +213,8 @@ float HistogramMax(float* A) {
 };
 
 float HistogramDistance(float* A, float* B) {
+    /* Distanza euclidea tra gli istogrammi di 33 float*/
+    /* Contemporaneamente normalizzazione dell'istogramma*/
     float d = 0;
     float maxA = HistogramMax(A);
     float maxB = HistogramMax(B);
